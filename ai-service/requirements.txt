@@ -1,0 +1,37 @@
+#
+# AI Service Python Dependencies
+#
+# This file lists the Python packages required to run the AI service.
+# Use 'pip install -r requirements.txt' to install them.
+# For production, it's recommended to pin exact versions to ensure reproducibility.
+# The '~=' operator provides some flexibility for minor patch updates.
+#
+
+# --- Web Framework & Server ---
+# Flask is a lightweight web framework for building the API.
+# Gunicorn is a production-grade WSGI server to run the Flask app.
+# Flask-Cors handles Cross-Origin Resource Sharing for requests from the frontend.
+Flask~=2.3.2
+gunicorn~=21.2.0
+Flask-Cors~=4.0.0
+
+# --- Configuration ---
+# python-dotenv is used to load environment variables from a .env file during development.
+python-dotenv~=1.0.0
+
+# --- Machine Learning & NLP ---
+# Transformers provides state-of-the-art machine learning architectures (like BERT, T5).
+# Torch is the deep learning framework used by the Transformers models.
+# Sentencepiece is a tokenizer/detokenizer library required by many Transformer models.
+#
+# NOTE: The 'torch' package listed here is for CPU-only.
+# For GPU support (recommended for production performance), you would install a
+# CUDA-enabled version. See https://pytorch.org/get-started/locally/ for instructions.
+transformers~=4.35.2
+torch~=2.1.1
+sentencepiece~=0.1.99
+
+# --- Optional for more advanced NLP tasks ---
+# Uncomment if you need more advanced text processing capabilities.
+# nltk~=3.8.1
+# spacy~=3.7.2
