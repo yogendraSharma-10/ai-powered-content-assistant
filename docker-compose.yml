@@ -1,0 +1,101 @@
+```yaml
+# Docker Compose file for the AI-Powered Content Assistant
+#
+# This file defines the multi-container application environment for local development.
+# It sets up three main services: a React frontend, a Node.js API gateway, and a Python AI service.
+#
+# To run:
+# 1. Ensure you have Docker and Docker Compose installed.
+# 2. Create a .env file from the .env.example template.
+# 3. Run `docker-compose up --build` from the project root.
+#
+version: '3.8'
+
+services:
+  # React Frontend Service
+  # Serves the user interface built with React.
+  frontend:
+    container_name: content-assistant-frontend
+    # Build the Docker image from the 'frontend' directory.
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    # Mount the local source code into the container for hot-reloading.
+    # The anonymous volume for node_modules prevents the host's node_modules
+    # from overwriting the container's, which might have different dependencies
+    # based on the container's OS.
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    # Map the host port to the container's port where the React dev server runs.
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    # Environment variables required by the React application.
+    # CHOKIDAR_USEPOLLING is often necessary for hot-reloading to work correctly inside Docker.
+    # REACT_APP_API_GATEWAY_URL points to the gateway as exposed on the host machine,
+    # as this URL is used by the user's browser.
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_GATEWAY_URL=http://localhost:${API_GATEWAY_PORT:-5000}/api
+    # Ensure the API gateway is started before the frontend for a smoother developer experience.
+    depends_on:
+      - api-gateway
+    networks:
+      - content-assistant-net
+
+  # Node.js API Gateway Service
+  # Acts as a reverse proxy, routing requests from the frontend to the appropriate backend service.
+  api-gateway:
+    container_name: content-assistant-api-gateway
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    volumes:
+      - ./api-gateway:/app
+      - /app/node_modules
+    ports:
+      - "${API_GATEWAY_PORT:-5000}:5000"
+    # Load environment variables from the .env file in the project root.
+    env_file:
+      - .env
+    # Environment variables for the gateway.
+    # The AI_SERVICE_URL uses the service name 'ai-service' as the hostname,
+    # which is resolved by Docker's internal DNS on the custom network.
+    environment:
+      - NODE_ENV=development
+      - PORT=5000
+      - AI_SERVICE_URL=http://ai-service:${AI_SERVICE_PORT:-8000}
+    # This service depends on the AI service to be running.
+    depends_on:
+      - ai-service
+    networks:
+      - content-assistant-net
+
+  # Python AI/ML Service
+  # Handles the core AI/ML tasks like text summarization.
+  ai-service:
+    container_name: content-assistant-ai-service
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    volumes:
+      - ./ai-service:/app
+    ports:
+      - "${AI_SERVICE_PORT:-8000}:8000"
+    env_file:
+      - .env
+    # Environment variables for the Python service (e.g., Flask or FastAPI).
+    environment:
+      - PORT=8000
+      # Add any model-specific or API key variables here, loaded from .env
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+    networks:
+      - content-assistant-net
+
+# Defines the custom bridge network for our services.
+# This allows containers to communicate with each other using their service names as hostnames.
+networks:
+  content-assistant-net:
+    driver: bridge
+```
